@@ -7,20 +7,24 @@
 
 import SwiftUI
 
-struct DutchPostalcode {
-    let value: String
-    init?(value: String) {
-        guard let value = value.dutchPostalcode
-        else { return nil }
-        self.value = value
-    }
-}
+
 
 extension String {
-    var dutchPostalcode: String? {
-        let pattern = /^\s*([1-9]\d{3})\s*([A-Z,a-z]{2})\s*$/
-
-        return if let match = firstMatch(of: pattern) {
+    enum DutchPostalcodeFormat {
+        case loose
+        case strict
+        
+        var pattern: Regex<(Substring, Substring, Substring)> {
+            return switch self {
+            case .loose:   /^\s*([1-9]\d{3})\s*([A-Z,a-z]{2})\s*$/
+            case .strict:   /^([1-9]\d{3})([A-Z,a-z]{2})$/
+            }
+        }
+    }
+    
+    func dutchPostalcode(format: DutchPostalcodeFormat) -> String? {
+        let  match: Regex<(Substring, Substring, Substring)>.Match? = self.firstMatch(of: format.pattern)
+        return if let match {
             "\(match.1)\(match.2.uppercased())"
         } else {
             nil
@@ -65,10 +69,10 @@ struct ContentView: View {
                         inputText = newValue.filter { $0.isLetter || $0.isNumber }
                             .uppercased()
                         
-                        postalCode = inputText.dutchPostalcode
+                        postalCode = inputText.dutchPostalcode(format: .loose)
                     }
                     .onAppear {
-                        inputText =  postalCode?.dutchPostalcode ?? ""
+                        inputText =  postalCode?.dutchPostalcode(format: .loose) ?? ""
                     }
                     .onSubmit {
                         attempSate()
